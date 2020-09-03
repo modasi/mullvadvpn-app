@@ -4,6 +4,16 @@ use std::{ffi::OsStr, os::windows::ffi::OsStrExt};
 
 const LOGGING_CONTEXT: &[u8] = b"WinExclude\0";
 
+/*
+TODO:
+
+WinExclude_SetAppPaths:
+
+Success => "Updated exclusions paths",
+NotFound => "One or more paths were not found",
+InvalidArgument => "Invalid argument",
+*/
+
 /// Errors that may occur in [`SplitTunnel`].
 #[derive(err_derive::Error, Debug)]
 pub enum Error {
@@ -22,11 +32,15 @@ pub struct SplitTunnel(());
 impl SplitTunnel {
     /// Initialize the driver.
     pub fn new() -> Result<Self, Error> {
-        if !unsafe {
-            WinExclude_Initialize(Some(log_sink), LOGGING_CONTEXT as *const _ as *const u8)
-        } {
-            return Err(Error::InitializationFailed);
-        }
+        // TODO: set up the driver
+
+        // TODO: connect
+        // TODO: initialize
+        // TODO: register processes
+        // TODO: register IPs
+
+        // TODO: set paths? empty list?
+        // TODO: think about
         Ok(SplitTunnel(()))
     }
 
@@ -43,64 +57,16 @@ impl SplitTunnel {
         let mut u16_paths_ptrs: Vec<_> = u16_paths.iter().map(|path| path.as_ptr()).collect();
         u16_paths_ptrs.push(std::ptr::null());
 
-        unsafe { WinExclude_SetAppPaths(u16_paths_ptrs.as_ptr()) }.into()
+        // TODO: We should reject non-absolute paths
+        // TODO: The paths must be appropriately converted to physical paths
+        //  TODO: take code from test project
+
+        // TODO: Set app paths here
     }
 }
 
 impl Drop for SplitTunnel {
     fn drop(&mut self) {
-        if !unsafe { WinExclude_Deinitialize() } {
-            log::error!("Failed to deinitialize split tunneling");
-        }
-    }
-}
-
-#[allow(non_snake_case)]
-mod winexclude {
-    use crate::logging::windows::LogSink;
-    use std::fmt;
-
-    #[allow(dead_code)]
-    #[repr(u32)]
-    #[derive(Debug, Clone, Copy)]
-    pub enum WinExcludeUpdateStatus {
-        Success = 0,
-        NotFound = 1,
-        InvalidArgument = 2,
-    }
-
-    impl Into<Result<(), super::Error>> for WinExcludeUpdateStatus {
-        fn into(self) -> Result<(), super::Error> {
-            match self {
-                WinExcludeUpdateStatus::Success => Ok(()),
-                val => Err(super::Error::UpdatePaths(val)),
-            }
-        }
-    }
-
-    impl fmt::Display for WinExcludeUpdateStatus {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            use WinExcludeUpdateStatus::*;
-            write!(
-                f,
-                "{}",
-                match self {
-                    Success => "Updated exclusions paths",
-                    NotFound => "One or more paths were not found",
-                    InvalidArgument => "Invalid argument",
-                }
-            )
-        }
-    }
-
-    extern "system" {
-        #[link_name = "WinExclude_Initialize"]
-        pub fn WinExclude_Initialize(sink: Option<LogSink>, sink_context: *const u8) -> bool;
-
-        #[link_name = "WinExclude_Deinitialize"]
-        pub fn WinExclude_Deinitialize() -> bool;
-
-        #[link_name = "WinExclude_SetAppPaths"]
-        pub fn WinExclude_SetAppPaths(paths: *const *const u16) -> WinExcludeUpdateStatus;
+        // TODO: Deinitialize driver here
     }
 }
